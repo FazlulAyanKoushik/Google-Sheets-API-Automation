@@ -5,7 +5,7 @@ from featch_excel_id import extract_id_from_link
 
 # Set up credentials
 credentials = service_account.Credentials.from_service_account_file(
-    'trip-care-413400-f6b3ee3249da.json',
+    'credentials.json',
     scopes=['https://www.googleapis.com/auth/spreadsheets']
 )
 
