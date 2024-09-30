@@ -1,6 +1,7 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from featch_excel_id import extract_id_from_link
+from datetime import datetime, timezone
 
 excel_url = "https://docs.google.com/spreadsheets/d/1voO7KrKWfHLRz9kT38h4VxQ277ClMu7C3fwEQX11UAE/edit?gid=1293238047#gid=1293238047"
 
@@ -10,7 +11,8 @@ credentials = service_account.Credentials.from_service_account_file(
     scopes=['https://www.googleapis.com/auth/spreadsheets']
 )
 
-print(credentials)
+
+current_time = str(datetime.now(timezone.utc))
 
 
 # Helper function to retrieve all data from the sheet
@@ -67,25 +69,21 @@ def update_product_by_code(
                 product_name = row[2]  # Assuming product_name is in the 3rd column
                 break
 
-    # Create a new row with the updated details
+    # Create a new row with the updated details, leaving quantity blank for now
     new_row = [
-        "",  # Date and Time (blank)
+        current_time,  # Date and Time (blank)
         product_code,  # Product Code
         product_name,  # Product Name
         type_of_transaction,  # Type of Transaction (Income/Sale)
-        quantity,  # Quantity
+        quantity,  # Quantity (Initially blank)
         "",  # Adjusted Quantity (blank)
         payment_method  # Payment Method
     ]
 
-    print("="*20)
-    print(new_row)
-    print("="*20)
-    #
-    # # Step 4: Append the new row to the sheet.
+    # Step 4: Append the new row to the sheet (with blank quantity).
     products.append(new_row)
 
-    # Step 5: Write the updated products list back to the sheet, including the new row.
+    # Step 5: Write the updated products list back to the sheet (initially without quantity).
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
         range=f'{registry_sheet}!A1:G{len(products)}',  # Adjust range to include all rows
@@ -93,7 +91,18 @@ def update_product_by_code(
         valueInputOption='RAW'
     ).execute()
 
-    return f"New transaction for product {product_code} added successfully."
+    # Step 6: Get the row index of the newly added row (which is the last row in the sheet).
+    new_row_index = len(products)
+
+    # Step 7: Now update the quantity in the newly added row.
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f'{registry_sheet}!E{new_row_index}',  # Update only the quantity field in the new row (Column E)
+        body={'values': [[quantity]]},  # Add the actual quantity
+        valueInputOption='RAW'
+    ).execute()
+
+    return f"New transaction for product {product_code} added successfully with quantity updated."
 
 
 # Function to delete a product by product code
