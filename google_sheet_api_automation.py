@@ -12,9 +12,6 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 
 
-current_time = str(datetime.now(timezone.utc))
-
-
 # Helper function to retrieve all data from the sheet
 def get_all_products_of_actual_inventory(service, spreadsheet_id, sheet_name='Actual Inventory'):
     result = service.spreadsheets().values().get(
@@ -71,7 +68,7 @@ def update_product_by_code(
 
     # Create a new row with the updated details, leaving quantity blank for now
     new_row = [
-        current_time,  # Date and Time (blank)
+        "",  # Date and Time (blank)
         product_code,  # Product Code
         product_name,  # Product Name
         type_of_transaction,  # Type of Transaction (Income/Sale)
@@ -93,14 +90,6 @@ def update_product_by_code(
 
     # Step 6: Get the row index of the newly added row (which is the last row in the sheet).
     new_row_index = len(products)
-
-    # Step 7: Now update the quantity in the newly added row.
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f'{registry_sheet}!E{new_row_index}',  # Update only the quantity field in the new row (Column E)
-        body={'values': [[quantity]]},  # Add the actual quantity
-        valueInputOption='RAW'
-    ).execute()
 
     return f"New transaction for product {product_code} added successfully with quantity updated."
 
