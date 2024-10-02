@@ -1,8 +1,10 @@
+from datetime import datetime
+
+import pytz
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
 from featch_excel_id import extract_id_from_link
-from datetime import datetime, timezone
-import pytz
 
 excel_url = "https://docs.google.com/spreadsheets/d/1voO7KrKWfHLRz9kT38h4VxQ277ClMu7C3fwEQX11UAE/edit?gid=1293238047#gid=1293238047"
 
