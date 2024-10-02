@@ -23,6 +23,9 @@ or
 pip install -r requirements.txt
 ```
 
+## Required file
+add you credentials file in the root directory of the project and rename it to `credentials.json`
+
 ## Usage
 
 ```bash
