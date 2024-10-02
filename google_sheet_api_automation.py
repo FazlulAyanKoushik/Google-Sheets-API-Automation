@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 
 excel_url = "https://docs.google.com/spreadsheets/d/1voO7KrKWfHLRz9kT38h4VxQ277ClMu7C3fwEQX11UAE/edit?gid=1293238047#gid=1293238047"
 
-
 # Set up credentials
 credentials = service_account.Credentials.from_service_account_file(
     'credentials.json',
@@ -163,11 +162,20 @@ if __name__ == '__main__':
     transaction_registry_sheet_name = sheet_names[1]
 
     # Get the list of products
-    # all_products = get_all_products(service, spreadsheet_id, main_inventory_sheet_name)
+    # all_products = get_all_products(
+    # service,
+    # spreadsheet_id,
+    # main_inventory_sheet_name
+    # )
     # print("All Products:", all_products)
 
     # # Get a specific product by code or name
-    # product = get_product_by_code_or_name(service, spreadsheet_id, "1111", main_inventory_sheet_name)
+    # product = get_product_by_code_or_name(
+    #     service,
+    #     spreadsheet_id,
+    #     "1111",
+    #     main_inventory_sheet_name
+    # )
 
     # ====================================================
     # Update a product by code section
@@ -185,5 +193,11 @@ if __name__ == '__main__':
     # print(update_message)
     #
     # # Delete a product by code
-    delete_message = delete_product_by_code(service, spreadsheet_id, "2222", registry_sheet="Transaction Registry")
+    delete_message = delete_product_by_code(
+        service,
+        spreadsheet_id,
+        "2222",
+        registry_sheet="Transaction Registry"
+    )
+
     print(delete_message)
