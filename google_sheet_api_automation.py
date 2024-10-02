@@ -2,6 +2,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from featch_excel_id import extract_id_from_link
 from datetime import datetime, timezone
+import pytz
 
 excel_url = "https://docs.google.com/spreadsheets/d/1voO7KrKWfHLRz9kT38h4VxQ277ClMu7C3fwEQX11UAE/edit?gid=1293238047#gid=1293238047"
 
@@ -10,6 +11,13 @@ credentials = service_account.Credentials.from_service_account_file(
     'credentials.json',
     scopes=['https://www.googleapis.com/auth/spreadsheets']
 )
+
+# Get the current time in UTC
+utc_time = datetime.now(pytz.utc)
+
+# Convert the UTC time to Bangladesh timezone (Asia/Dhaka)
+bd_timezone = pytz.timezone('Asia/Dhaka')
+current_date_time = utc_time.astimezone(bd_timezone).strftime("%Y-%m-%d %H:%M:%S")
 
 
 # Helper function to retrieve all data from the sheet
@@ -68,7 +76,7 @@ def update_product_by_code(
 
     # Create a new row with the updated details, leaving quantity blank for now
     new_row = [
-        "",  # Date and Time (blank)
+        current_date_time,  # Date and Time (blank)
         product_code,  # Product Code
         product_name,  # Product Name
         type_of_transaction,  # Type of Transaction (Income/Sale)
@@ -181,17 +189,17 @@ if __name__ == '__main__':
     # ====================================================
     # Update a product by code section
     # ====================================================
-    # update_message = update_product_by_code(
-    #     service=service,
-    #     spreadsheet_id=spreadsheet_id,
-    #     product_code="1111",
-    #     type_of_transaction="Sale",
-    #     quantity=10,
-    #     payment_method="Cash",
-    #     main_sheet=main_inventory_sheet_name,
-    #     registry_sheet=transaction_registry_sheet_name
-    # )
-    # print(update_message)
+    update_message = update_product_by_code(
+        service=service,
+        spreadsheet_id=spreadsheet_id,
+        product_code="1111",
+        type_of_transaction="Sale",
+        quantity=5,
+        payment_method="Cash",
+        main_sheet=main_inventory_sheet_name,
+        registry_sheet=transaction_registry_sheet_name
+    )
+    print(update_message)
     #
     # # Delete a product by code
     # delete_message = delete_product_by_code(
