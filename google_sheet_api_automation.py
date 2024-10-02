@@ -5,6 +5,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from featch_excel_id import extract_id_from_link
+import json
 
 excel_url = "https://docs.google.com/spreadsheets/d/1voO7KrKWfHLRz9kT38h4VxQ277ClMu7C3fwEQX11UAE/edit?gid=1293238047#gid=1293238047"
 
@@ -40,13 +41,21 @@ def get_list_of_transaction_registry(service, spreadsheet_id, sheet_name='Transa
 
 
 # Function to get a product by code or name
-def get_product_by_code_or_name(service, spreadsheet_id, search_value, sheet_name='Sheet1'):
+def get_product_by_code_or_name(service, spreadsheet_id, search_value, sheet_name):
     products = get_all_products_of_actual_inventory(service, spreadsheet_id, sheet_name)
+
     for row in products:
-        product_code, product_name = row[0], row[1]
-        if search_value == product_code or search_value == product_name:
-            return row
-    return None
+        product_code = row[0]
+        if search_value == product_code:
+            product_details = {
+                "product_code": row[0],
+                "stock_quantity": row[1],
+                "unitary_price": row[2],
+                "actual_amount_in_dollars": row[3]
+            }
+            return json.dumps(product_details, indent=4)  # Return as a JSON string
+
+    return json.dumps({"error": "Product not found"}, indent=4)
 
 
 # Function to update product details
@@ -61,8 +70,10 @@ def update_product_by_code(
         registry_sheet='Transaction Registry'
 ):
     # Step 1: Check if the product exists in the "Actual Inventory" sheet.
-    product = get_product_by_code_or_name(service, spreadsheet_id, product_code, main_sheet)
-    if not product:
+    product_json = get_product_by_code_or_name(service, spreadsheet_id, product_code, main_sheet)
+    product = json.loads(product_json)
+
+    if "error" in product:
         return f"Product {product_code} not found in {main_sheet}."
 
     # Step 2: Get the current list of transactions in the "Transaction Registry" sheet.
@@ -194,9 +205,9 @@ if __name__ == '__main__':
     update_message = update_product_by_code(
         service=service,
         spreadsheet_id=spreadsheet_id,
-        product_code="1111",
+        product_code="1121",
         type_of_transaction="Sale",
-        quantity=5,
+        quantity=12,
         payment_method="Cash",
         main_sheet=main_inventory_sheet_name,
         registry_sheet=transaction_registry_sheet_name
