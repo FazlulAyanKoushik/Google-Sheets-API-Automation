@@ -161,21 +161,22 @@ if __name__ == '__main__':
     main_inventory_sheet_name = sheet_names[0]
     transaction_registry_sheet_name = sheet_names[1]
 
-    # Get the list of products
-    # all_products = get_all_products(
-    # service,
-    # spreadsheet_id,
-    # main_inventory_sheet_name
-    # )
+    # Get the list of products in the "Actual Inventory" sheet
+    # all_products = get_all_products_of_actual_inventory(service, spreadsheet_id, main_inventory_sheet_name)
     # print("All Products:", all_products)
 
-    # # Get a specific product by code or name
+    # Get the list of transactions in the "Transaction Registry" sheet
+    # all_transactions = get_list_of_transaction_registry(service, spreadsheet_id, transaction_registry_sheet_name)
+    # print("All Transactions:", all_transactions)
+
+    # # Get a specific product by code from the "Actual Inventory" sheet
     # product = get_product_by_code_or_name(
     #     service,
     #     spreadsheet_id,
     #     "1111",
     #     main_inventory_sheet_name
     # )
+    # print("Product:", product)
 
     # ====================================================
     # Update a product by code section
@@ -193,11 +194,11 @@ if __name__ == '__main__':
     # print(update_message)
     #
     # # Delete a product by code
-    delete_message = delete_product_by_code(
-        service,
-        spreadsheet_id,
-        "2222",
-        registry_sheet="Transaction Registry"
-    )
+    # delete_message = delete_product_by_code(
+    #     service,
+    #     spreadsheet_id,
+    #     "2222",
+    #     registry_sheet="Transaction Registry"
+    # )
 
-    print(delete_message)
+    # print(delete_message)
