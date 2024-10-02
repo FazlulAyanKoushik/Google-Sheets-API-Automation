@@ -73,49 +73,70 @@ def update_product_by_code(
         product_code,  # Product Code
         product_name,  # Product Name
         type_of_transaction,  # Type of Transaction (Income/Sale)
-        quantity,  # Quantity (Initially blank)
+        quantity,  # Quantity
         "",  # Adjusted Quantity (blank)
         payment_method  # Payment Method
     ]
 
-    # Step 4: Append the new row to the sheet (with blank quantity).
-    products.append(new_row)
-
-    # Step 5: Write the updated products list back to the sheet (initially without quantity).
-    service.spreadsheets().values().update(
+    # Step 4: Append the new row to the sheet.
+    service.spreadsheets().values().append(
         spreadsheetId=spreadsheet_id,
-        range=f'{registry_sheet}!A1:G{len(products)}',  # Adjust range to include all rows
-        body={'values': products},
-        valueInputOption='RAW'
+        range=f'{registry_sheet}!A:G',  # The sheet range where the new row should be added
+        body={'values': [new_row]},
+        valueInputOption='RAW',
+        insertDataOption='INSERT_ROWS'  # Automatically inserts the new row
     ).execute()
-
-    # Step 6: Get the row index of the newly added row (which is the last row in the sheet).
-    new_row_index = len(products)
 
     return f"New transaction for product {product_code} added successfully with quantity updated."
 
 
-# Function to delete a product by product code
-# def delete_product_by_code(service, spreadsheet_id, product_code, sheet_name='Sheet1'):
-#     products = get_all_products(service, spreadsheet_id, sheet_name)
-#     for i, row in enumerate(products):
-#         if row[0] == product_code:
-#             del products[i]
-#
-#             # Clear the sheet and write back the remaining products
-#             clear_sheet(service, spreadsheet_id, sheet_name)
-#             service.spreadsheets().values().update(
-#                 spreadsheetId=spreadsheet_id,
-#                 range=f'{sheet_name}!A1:F{len(products)}',
-#                 body={'values': products},
-#                 valueInputOption='RAW'
-#             ).execute()
-#             return f"Product {product_code} deleted successfully."
-#     return f"Product {product_code} not found."
+# Function to delete the last occurrence of a product by product code
+def delete_product_by_code(service, spreadsheet_id, product_code, registry_sheet='Transaction Registry'):
+    # Step 1: Get the list of transactions in the "Transaction Registry" sheet.
+    transactions = get_list_of_transaction_registry(service, spreadsheet_id, registry_sheet)
+
+    # Step 2: Find the last occurrence of the product by product code
+    last_row_to_delete = None
+    for i, row in enumerate(transactions):
+        if row[1] == product_code:  # Assuming the product code is in the second column
+            last_row_to_delete = i  # Keep updating this index to track the last occurrence
+
+    if last_row_to_delete is None:
+        return f"Product {product_code} not found in {registry_sheet}."
+
+    # Step 3: Prepare the batch update request to delete the last row
+    requests = [{
+        "deleteDimension": {
+            "range": {
+                "sheetId": get_sheet_id_by_name(service, spreadsheet_id, registry_sheet),  # Get the sheet ID
+                "dimension": "ROWS",
+                "startIndex": last_row_to_delete,  # 0-based index of the row to delete
+                "endIndex": last_row_to_delete + 1  # End index is non-inclusive, so +1
+            }
+        }
+    }]
+
+    # Step 4: Execute the batch update to remove the row
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={"requests": requests}
+    ).execute()
+
+    return f"Last occurrence of product {product_code} deleted successfully from {registry_sheet}."
+
+
+# Function to get sheet ID by sheet name
+def get_sheet_id_by_name(service, spreadsheet_id, sheet_name):
+    sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sheets = sheet_metadata.get('sheets', [])
+    for sheet in sheets:
+        if sheet['properties']['title'] == sheet_name:
+            return sheet['properties']['sheetId']
+    return None
 
 
 # Helper function to clear a sheet
-def clear_sheet(service, spreadsheet_id, sheet_name='Sheet1'):
+def clear_sheet(service, spreadsheet_id, sheet_name):
     service.spreadsheets().values().clear(
         spreadsheetId=spreadsheet_id,
         range=f'{sheet_name}!A1:Z1000'
@@ -151,18 +172,18 @@ if __name__ == '__main__':
     # ====================================================
     # Update a product by code section
     # ====================================================
-    update_message = update_product_by_code(
-        service=service,
-        spreadsheet_id=spreadsheet_id,
-        product_code="1111",
-        type_of_transaction="Sale",
-        quantity=10,
-        payment_method="Cash",
-        main_sheet=main_inventory_sheet_name,
-        registry_sheet=transaction_registry_sheet_name
-    )
-    print(update_message)
+    # update_message = update_product_by_code(
+    #     service=service,
+    #     spreadsheet_id=spreadsheet_id,
+    #     product_code="1111",
+    #     type_of_transaction="Sale",
+    #     quantity=10,
+    #     payment_method="Cash",
+    #     main_sheet=main_inventory_sheet_name,
+    #     registry_sheet=transaction_registry_sheet_name
+    # )
+    # print(update_message)
     #
     # # Delete a product by code
-    # delete_message = delete_product_by_code(service, spreadsheet_id, "P001")
-    # print(delete_message)
+    delete_message = delete_product_by_code(service, spreadsheet_id, "2222", registry_sheet="Transaction Registry")
+    print(delete_message)
