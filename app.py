@@ -70,6 +70,7 @@ def chat():
     if function_name and function_args is not {}:
         function_message = available_functions[function_name](**function_args)
 
+        # store function response message to session message tread
         session['messages'].append(
             {
                 "role": "function",
@@ -78,6 +79,7 @@ def chat():
             }
         )
 
+        # Call the OpenAI API with current conversation
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=session['messages'],
@@ -87,6 +89,7 @@ def chat():
         response_content = response.choices[0].message.content
         session['messages'].append(response_message)
 
+    # Return the chatbot response
     return jsonify(
         {"message": response_content}
     ), 200
