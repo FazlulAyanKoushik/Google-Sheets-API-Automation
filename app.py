@@ -30,6 +30,7 @@ def chat():
     user_message = "need a 1111 product details"
     # user_message = "Sale 10 quantity of 1111 product by cash"
     # user_message = "delete 1111 product"
+    # user_message = None
 
     if not user_message:
         return jsonify({'message': 'No message provided'}), 400
