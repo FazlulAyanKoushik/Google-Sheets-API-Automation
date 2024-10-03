@@ -78,6 +78,13 @@ def get_list_of_transaction_registry(sheet_name='Transaction Registry'):
 
 
 def get_product_by_code(product_code):
+    """
+    Retrieves the details of a product by its product code from the main inventory sheet.
+    :param product_code:
+    :return:
+        A JSON string representing the product details including product code, stock quantity, unitary price,
+        and actual amount in dollars. If the product is not found, returns a JSON string with an error message.
+    """
     sheet_name = main_inventory_sheet_name
     products = get_all_products_of_actual_inventory(sheet_name)
 
@@ -101,6 +108,15 @@ def add_new_transaction(
         quantity,
         payment_method,
 ):
+    """
+    Adds a new transaction for a product to the Transaction Registry sheet.
+    :param product_code:
+    :param type_of_transaction:
+    :param quantity:
+    :param payment_method:
+    :return:
+        A message indicating the success of adding the new transaction with the updated quantity.
+    """
     main_sheet = main_inventory_sheet_name
     registry_sheet = transaction_registry_sheet_name
     # Step 1: Check if the product exists in the "Actual Inventory" sheet.
@@ -145,6 +161,12 @@ def add_new_transaction(
 
 
 def delete_product_by_code(product_code):
+    """
+    Deletes the last occurrence of a product by its product code from the "Transaction Registry" sheet.
+    :param product_code:
+    :return:
+        A message indicating the success of deleting the last occurrence of the product.
+    """
     registry_sheet = transaction_registry_sheet_name
     # Step 1: Get the list of transactions in the "Transaction Registry" sheet.
     transactions = get_list_of_transaction_registry(registry_sheet)
@@ -163,7 +185,7 @@ def delete_product_by_code(product_code):
         "deleteDimension": {
             "range": {
                 "sheetId": get_sheet_id_by_name(registry_sheet),  # Get the sheet ID
-                "dimension": "ROWS",
+                "dimension": "ROWS",  # Delete a row
                 "startIndex": last_row_to_delete,  # 0-based index of the row to delete
                 "endIndex": last_row_to_delete + 1  # End index is non-inclusive, so +1
             }
@@ -181,6 +203,12 @@ def delete_product_by_code(product_code):
 
 # Function to get sheet ID by sheet name
 def get_sheet_id_by_name(sheet_name):
+    """
+    Retrieves the sheet ID of a sheet with the given name from the Google Sheets document.
+    :param sheet_name:
+    :return:
+        The sheet ID if the sheet is found, otherwise None.
+    """
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     sheets = sheet_metadata.get('sheets', [])
     for sheet in sheets:
@@ -191,6 +219,12 @@ def get_sheet_id_by_name(sheet_name):
 
 # Helper function to clear a sheet
 def clear_sheet(sheet_name):
+    """
+    Clears the contents of a sheet in the Google Sheets document.
+    :param sheet_name:
+    :return:
+        None
+    """
     service.spreadsheets().values().clear(
         spreadsheetId=spreadsheet_id,
         range=f'{sheet_name}!A1:Z1000'
