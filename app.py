@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from decouple import config
-from flask import Flask, request, jsonify, session
+from flask import Flask, jsonify, session
 from flask_session import Session
 
 from openai import OpenAI
