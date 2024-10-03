@@ -22,9 +22,38 @@ utc_time = datetime.now(pytz.utc)
 bd_timezone = pytz.timezone('Asia/Dhaka')
 current_date_time = utc_time.astimezone(bd_timezone).strftime("%Y-%m-%d %H:%M:%S")
 
+spreadsheet_id = extract_id_from_link(excel_url)
+
+service = build('sheets', 'v4', credentials=credentials)
+
+
+def get_sheet_names():
+    """
+    Retrieves the names of all sheets in the Google Sheets document associated with the given spreadsheet ID.
+
+    :return:
+        A list of sheet names.
+    """
+    sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    sheets = sheet_metadata.get('sheets', '')
+    sheet_names_ = [sheet['properties']['title'] for sheet in sheets]
+    return sheet_names_
+
+
+sheet_names = get_sheet_names()
+main_inventory_sheet_name = sheet_names[0]
+transaction_registry_sheet_name = sheet_names[1]
+
 
 # Helper function to retrieve all data from the sheet
-def get_all_products_of_actual_inventory(service, spreadsheet_id, sheet_name='Actual Inventory'):
+def get_all_products_of_actual_inventory(sheet_name='Actual Inventory'):
+    """
+    Retrieves all products from the Actual Inventory in the Google Sheets document.
+
+    :param sheet_name:
+    :return:
+        A list of lists representing the products and their details.
+    """
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=f"{sheet_name}!A:G"
@@ -32,7 +61,14 @@ def get_all_products_of_actual_inventory(service, spreadsheet_id, sheet_name='Ac
     return result.get('values', [])
 
 
-def get_list_of_transaction_registry(service, spreadsheet_id, sheet_name='Transaction Registry'):
+def get_list_of_transaction_registry(sheet_name='Transaction Registry'):
+    """
+        Retrieves all products from the Transaction Registry in the Google Sheets document.
+
+        :param sheet_name:
+        :return:
+            A list of lists representing the products and their details.
+        """
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=f"{sheet_name}!A:G"
@@ -40,13 +76,13 @@ def get_list_of_transaction_registry(service, spreadsheet_id, sheet_name='Transa
     return result.get('values', [])
 
 
-# Function to get a product by code or name
-def get_product_by_code_or_name(service, spreadsheet_id, search_value, sheet_name):
-    products = get_all_products_of_actual_inventory(service, spreadsheet_id, sheet_name)
+def get_product_by_code(product_code):
+    sheet_name = main_inventory_sheet_name
+    products = get_all_products_of_actual_inventory(sheet_name)
 
     for row in products:
-        product_code = row[0]
-        if search_value == product_code:
+        product_code_ = row[0]
+        if product_code == product_code_:
             product_details = {
                 "product_code": row[0],
                 "stock_quantity": row[1],
@@ -58,26 +94,23 @@ def get_product_by_code_or_name(service, spreadsheet_id, search_value, sheet_nam
     return json.dumps({"error": "Product not found"}, indent=4)
 
 
-# Function to update product details
-def update_product_by_code(
-        service,
-        spreadsheet_id,
+def add_new_transaction(
         product_code,
         type_of_transaction,
         quantity,
         payment_method,
-        main_sheet='Actual Inventory',
-        registry_sheet='Transaction Registry'
 ):
+    main_sheet = main_inventory_sheet_name
+    registry_sheet = transaction_registry_sheet_name
     # Step 1: Check if the product exists in the "Actual Inventory" sheet.
-    product_json = get_product_by_code_or_name(service, spreadsheet_id, product_code, main_sheet)
-    product = json.loads(product_json)
+    product_json = get_product_by_code(product_code)
+    product_data = json.loads(product_json)
 
-    if "error" in product:
+    if "error" in product_data:
         return f"Product {product_code} not found in {main_sheet}."
 
     # Step 2: Get the current list of transactions in the "Transaction Registry" sheet.
-    products = get_list_of_transaction_registry(service, spreadsheet_id, registry_sheet)
+    products = get_list_of_transaction_registry(registry_sheet)
 
     # Extract product name from the product details if needed (assuming product[1] holds the product name).
     product_name = None
@@ -110,10 +143,10 @@ def update_product_by_code(
     return f"New transaction for product {product_code} added successfully with quantity updated."
 
 
-# Function to delete the last occurrence of a product by product code
-def delete_product_by_code(service, spreadsheet_id, product_code, registry_sheet='Transaction Registry'):
+def delete_product_by_code(product_code):
+    registry_sheet = transaction_registry_sheet_name
     # Step 1: Get the list of transactions in the "Transaction Registry" sheet.
-    transactions = get_list_of_transaction_registry(service, spreadsheet_id, registry_sheet)
+    transactions = get_list_of_transaction_registry(registry_sheet)
 
     # Step 2: Find the last occurrence of the product by product code
     last_row_to_delete = None
@@ -128,7 +161,7 @@ def delete_product_by_code(service, spreadsheet_id, product_code, registry_sheet
     requests = [{
         "deleteDimension": {
             "range": {
-                "sheetId": get_sheet_id_by_name(service, spreadsheet_id, registry_sheet),  # Get the sheet ID
+                "sheetId": get_sheet_id_by_name(registry_sheet),  # Get the sheet ID
                 "dimension": "ROWS",
                 "startIndex": last_row_to_delete,  # 0-based index of the row to delete
                 "endIndex": last_row_to_delete + 1  # End index is non-inclusive, so +1
@@ -146,7 +179,7 @@ def delete_product_by_code(service, spreadsheet_id, product_code, registry_sheet
 
 
 # Function to get sheet ID by sheet name
-def get_sheet_id_by_name(service, spreadsheet_id, sheet_name):
+def get_sheet_id_by_name(sheet_name):
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     sheets = sheet_metadata.get('sheets', [])
     for sheet in sheets:
@@ -156,70 +189,8 @@ def get_sheet_id_by_name(service, spreadsheet_id, sheet_name):
 
 
 # Helper function to clear a sheet
-def clear_sheet(service, spreadsheet_id, sheet_name):
+def clear_sheet(sheet_name):
     service.spreadsheets().values().clear(
         spreadsheetId=spreadsheet_id,
         range=f'{sheet_name}!A1:Z1000'
     ).execute()
-
-
-def get_sheet_names(service, spreadsheet_id):
-    sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    sheets = sheet_metadata.get('sheets', '')
-    sheet_names = [sheet['properties']['title'] for sheet in sheets]
-    return sheet_names
-
-
-if __name__ == '__main__':
-    # Extract the spreadsheet ID from the provided URL
-    spreadsheet_id = extract_id_from_link(excel_url)
-
-    # Create the Sheets API service
-    service = build('sheets', 'v4', credentials=credentials)
-
-    # Get sheet names
-    sheet_names = get_sheet_names(service, spreadsheet_id)
-    main_inventory_sheet_name = sheet_names[0]
-    transaction_registry_sheet_name = sheet_names[1]
-
-    # Get the list of products in the "Actual Inventory" sheet
-    # all_products = get_all_products_of_actual_inventory(service, spreadsheet_id, main_inventory_sheet_name)
-    # print("All Products:", all_products)
-
-    # Get the list of transactions in the "Transaction Registry" sheet
-    # all_transactions = get_list_of_transaction_registry(service, spreadsheet_id, transaction_registry_sheet_name)
-    # print("All Transactions:", all_transactions)
-
-    # # Get a specific product by code from the "Actual Inventory" sheet
-    # product = get_product_by_code_or_name(
-    #     service,
-    #     spreadsheet_id,
-    #     "1111",
-    #     main_inventory_sheet_name
-    # )
-    # print("Product:", product)
-
-    # ====================================================
-    # Update a product by code section
-    # ====================================================
-    update_message = update_product_by_code(
-        service=service,
-        spreadsheet_id=spreadsheet_id,
-        product_code="1121",
-        type_of_transaction="Sale",
-        quantity=12,
-        payment_method="Cash",
-        main_sheet=main_inventory_sheet_name,
-        registry_sheet=transaction_registry_sheet_name
-    )
-    print(update_message)
-    #
-    # # Delete a product by code
-    # delete_message = delete_product_by_code(
-    #     service,
-    #     spreadsheet_id,
-    #     "2222",
-    #     registry_sheet="Transaction Registry"
-    # )
-
-    # print(delete_message)
