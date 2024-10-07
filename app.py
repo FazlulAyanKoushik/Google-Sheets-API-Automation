@@ -24,6 +24,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 
+# @app.route('/chat', methods=['POST'])
 @app.route('/chat')
 def chat():
     # user_message = request.json.get('message')
